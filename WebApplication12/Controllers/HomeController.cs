@@ -62,7 +62,7 @@ namespace WebApplication12.Controllers
                 insertCmd.Parameters.AddWithValue("@Name", newRiskName);
                 insertCmd.ExecuteNonQuery();
 
-                TempData["Result"] = $"【管理層通知】已成功動態新增全新的資安風險代碼 {nextCode}：{newRiskName}";
+                TempData["Result"] = $"已成功動態新增全新的資安風險代碼 {nextCode}：{newRiskName}";
             }
 
             // 重新載入記憶體字典，確保接下來的翻譯（TranslateRiskCode）能立刻認得 X5
@@ -133,7 +133,7 @@ namespace WebApplication12.Controllers
             // 【防呆】確保使用者真的有輸入資產名稱
             if (string.IsNullOrWhiteSpace(AddProduct))
             {
-                TempData["Result"] = "❌ 錯誤：資產名稱不能為空白！";
+                TempData["Result"] = "❌ 錯誤：項目名稱不能為空白！";
                 return RedirectToAction("Index");
             }
 
@@ -163,7 +163,7 @@ namespace WebApplication12.Controllers
 
                     insertCmd.ExecuteNonQuery();
 
-                    TempData["Result"] = $"【系統通知】全新資產「{AddProduct}」已成功錄入，系統已自動配置初始狀態。";
+                    TempData["Result"] = $"【系統通知】全新項目「{AddProduct}」已成功錄入，系統已自動配置初始狀態。";
                 }
                 catch (Exception ex)
                 {
@@ -256,7 +256,7 @@ namespace WebApplication12.Controllers
                 cmd.ExecuteNonQuery();
             }
 
-            return Content($"✅ 【決策同步成功】資產編號 {id} 的風險範疇、等級與處置狀態已即時發布至動態資料庫中。");
+            return Content($"✅ 【決策同步成功】項目編號 {id} 的風險範疇、等級與處置狀態已即時發布至動態資料庫中。");
         }
 
         // ==========================================
