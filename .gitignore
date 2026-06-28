@@ -9,9 +9,18 @@
 *.user
 *.userosscache
 *.sln.docstates
-
+.vs/
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+
+# 3. 排除編譯產生的快取與垃圾檔案 (保持 GitHub 倉庫輕量、乾淨)
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.tmp
+*.log
 
 # Mono auto generated files
 mono_crash.*
@@ -262,8 +271,8 @@ ServiceFabricBackup/
 *.rptproj.bak
 
 # SQL Server files
-*.mdf
-*.ldf
+!*.mdf
+!*.ldf
 *.ndf
 
 # Business Intelligence projects

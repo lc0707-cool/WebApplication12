@@ -1,30 +1,32 @@
 ﻿@{
-    ViewData["Title"] = "基層作業專用 - 即時盤點面板";
+    ViewData["Title"] = "即時盤點面板";
 }
 
 <div class="container mt-4">
-    <h1>🛠️ 資安盤點即時作業面板</h1>
-    <p class="text-muted">本介面專供低階管理者（作業層）進行高精確度日常資產風險維護。</p>
+    <h1>🛠️ 資安即時調整作業面板</h1>
+    <p class="text-muted">本介面為日常風險維護。</p>
     <hr />
 
     <div class="card p-3 mb-4 bg-light">
-        <h6 class="card-title">快速定位資產</h6>
+        <h6 class="card-title">ID查詢</h6>
         <div class="input-group">
-            <span class="input-group-text">資產 ID</span>
-            <input type="number" id="txtId" class="form-control" placeholder="請輸入產品 ID，例如：1" />
-            <button class="btn btn-primary" id="btnSearch">載入資產資料</button>
+            <span class="input-group-text">項目 ID</span>
+            <input type="number" id="txtId" class="form-control" placeholder="請輸入企業資產標識符（Asset ID）" />
+            <button class="btn btn-primary" id="btnSearch">載入項目資料</button>
         </div>
     </div>
 
     <div class="card p-4 shadow-sm" id="workPanel" style="display:none;">
-        <h5>當前作業對象：產品 ID <span id="lblId" class="text-danger font-weight-bold"></span></h5>
+        <h5>
+            當前作業對象：ID <span id="lblId" class="text-danger fw-bold"></span>
+            ─ 項目名稱：<span id="lblItemName" class="text-primary fw-bold"></span>
+        </h5>
         <hr />
 
-        <label class="form-label font-weight-bold">請勾選該資產具備的資安風險項目 (可多選)：</label>
+        <label class="form-label fw-bold">請勾選此項目已識別的資安風險：：</label>
         <div class="my-3 p-3 border rounded bg-light">
             @foreach (var item in ViewBag.RiskDictionary)
             {
-                // 排除 X0，因為 X0 是沒評估時的預設值
                 if (item.Key != "X0")
                 {
                     <div class="form-check form-check-inline me-4 mb-2">
@@ -37,68 +39,111 @@
             }
         </div>
 
-        <button class="btn btn-success w-25" id="btnSubmit">確認提交更新</button>
+        <div class="row mt-3 mb-4">
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-warning">⚡ 變更風險等級：</label>
+                <select id="selRiskLevel" class="form-select">
+                    <option value="低">✅ 低</option>
+                    <option value="中">⏳ 中</option>
+                    <option value="高">⚠️ 高</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-success">⚙️ 變更處置狀態：</label>
+                <select id="selStatus" class="form-select">
+                    <option value="未處理">🔴 未處理</option>
+                    <option value="處理中">🟡 處理中</option>
+                    <option value="已緩解">🟢 已緩解</option>
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <button class="btn btn-success px-4" id="btnSubmit">儲存並更新</button>
+            <button class="btn btn-light border ms-2" onclick="$('#workPanel').fadeOut();">取消</button>
+        </div>
     </div>
-</div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function () {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
 
-    // 1. 點擊查詢：自動勾選對應的方塊
-    $("#btnSearch").click(function () {
-    var id = $("#txtId").val();
-    if (!id) { alert("請輸入產品 ID"); return; }
+        // 1. 🔍 點擊查詢：載入特定資產之完整 JSON 資料
+        $("#btnSearch").click(function () {
+        var id = $("#txtId").val();
+        if (!id) { alert("請輸入資產 ID"); return; }
 
-    $.ajax({
-    url: '/Home/GetRiskAjax',
-    type: 'GET',
-    data: { id: id },
-    success: function (dbRisk) {
-    $("#lblId").text(id);
-    $(".risk-checkbox").prop('checked', false); // 先清空舊的勾選
+        $.ajax({
+        url: '/Home/GetRiskAjax1',
+        type: 'GET',
+        data: { id: id },
+        success: function (data) {
+        // data 是從後端回傳的 JSON 物件： { item, risk, riskLevel, status }
 
-    // 修正處：JavaScript 的字串切割方法是小寫的 split
-    if (dbRisk && dbRisk !== "X0") {
-    var risks = dbRisk.split(';');
-    risks.forEach(function (riskCode) {
-    $("#chk-" + riskCode.trim()).prop('checked', true);
-    });
-    }
+        $("#lblId").text(id);
+        $("#lblItemName").text(data.item); // 🎯 成功印出資產名稱（如：電腦）
 
-    $("#workPanel").fadeIn();
-    },
-    error: function () {
-    alert("找不到該資產編號，請重新確認！");
-    $("#workPanel").hide();
-    }
-    });
-    });
+        $(".risk-checkbox").prop('checked', false); // 先清空舊的勾選
 
-    // 2. 點擊提交：自動將打勾的項目的 Value 組合成 "X1;X3" 傳給後端
-    $("#btnSubmit").click(function () {
-    var id = $("#lblId").text();
-    var selectedRisks = [];
+        // 自動勾選對應的風險核取方塊
+        if (data.risk && data.risk !== "X0") {
+        var risks = data.risk.split(';');
+        risks.forEach(function (riskCode) {
+        var chkBox = $("#chk-" + riskCode.trim());
+        if (chkBox.length > 0) {
+        chkBox.prop('checked', true);
+        }
+        });
+        }
 
-    // 收集所有被打勾的 checkbox value
-    $(".risk-checkbox:checked").each(function () {
-    selectedRisks.push($(this).val());
-    });
+        // 🎯 自動將下拉選單同步為目前的資料庫數值
+        $("#selRiskLevel").val(data.riskLevel);
+        $("#selStatus").val(data.status);
 
-    // 如果什麼都沒勾，預設為 X0 (尚未評估)
-    var riskString = selectedRisks.length > 0 ? selectedRisks.join(';') : "X0";
+        $("#workPanel").fadeIn();
+        },
+        error: function () {
+        alert("⚠️ 找不到該項目編號或該項目已被刪除，請重新確認！");
+        $("#workPanel").hide();
+        }
+        });
+        });
 
-    $.ajax({
-    url: '/Home/UpdateRiskAjax',
-    type: 'POST',
-    data: { id: id, risk: riskString },
-    success: function (msg) {
-    alert(msg);
-    },
-    error: function () {
-    alert("同步至資料庫時發生非預期錯誤。");
-    }
-    });
-    });
-    });
-</script>
+        // 2. 💾 點擊提交：將打勾風險、等級與處置狀態一併非同步送回
+        $("#btnSubmit").click(function () {
+        var id = $("#lblId").text();
+        var selectedRisks = [];
+
+        $(".risk-checkbox:checked").each(function () {
+        selectedRisks.push($(this).val());
+        });
+
+        var riskString = selectedRisks.length > 0 ? selectedRisks.join(';') : "X0";
+
+        // 🎯 擷取升級版選單的當前選擇數值
+        var riskLevel = $("#selRiskLevel").val();
+        var status = $("#selStatus").val();
+
+        $.ajax({
+        url: '/Home/UpdateRiskAjax',
+        type: 'POST',
+        // 🎯 完美同步：傳送四個必要引數回後台更新
+        data: {
+        id: id,
+        risk: riskString,
+        riskLevel: riskLevel,
+        status: status
+        },
+        success: function (response) {
+        alert(response);
+        // 巡檢完畢後保持原樣或隱藏面板，這裡可以選擇讓面板淡出，方便巡檢下一筆
+        $("#workPanel").fadeOut();
+        $("#txtId").val("").focus(); // 清空輸入框並聚焦，方便巡檢下一台機器
+        },
+        error: function () {
+        alert("❌ 儲存失敗，請檢查網路連線或資料庫狀態。");
+        }
+        });
+        });
+        });
+    </script>

@@ -1,6 +1,6 @@
 ﻿@model IEnumerable<WebApplication12.Models.Product>
 
-<h1>♻️ 資訊資產 - 資源回收桶</h1>
+<h1>♻️資源回收桶</h1>
 <hr />
 
 @if (!Model.Any())
@@ -9,26 +9,71 @@
 }
 else
 {
-    <table class="table table-hover">
+    <table class="table table-hover align-middle mt-3">
         <thead class="table-dark">
             <tr>
-                <th>編號</th>
-                <th>產品名稱</th>
-                <th>原始風險代碼</th>
-                <th>回收桶操作</th>
+                <th style="width: 8%">資產編號</th>
+                <th style="width: 18%">項目名稱</th>
+                <th style="width: 12%">項目類型</th>
+                <th style="width: 15%">資安風險</th>
+                <th style="width: 12%">風險等級</th>
+                <th style="width: 12%">處置狀態</th>
+                <th style="width: 23%">操作</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var X in Model)
             {
                 <tr id="trash-row-@X.Id">
-                    <td>@X.Id</td>
-                    <td>@X.Item</td>
-                    <td>@X.Risk</td>
-                    <td>
-                        <button type="button" class="btn btn-success btn-sm" onclick="recoverItem(@X.Id)">復原</button>
+                    <td class="fw-bold text-secondary">#@X.Id</td>
 
-                        <button type="button" class="btn btn-danger btn-sm" onclick="realDelete(@X.Id)">永久刪除</button>
+                    <td class="fw-bold text-dark">@X.Item</td>
+
+                    <td>
+                        <span class="badge bg-secondary">@(string.IsNullOrEmpty(X.AssetType) ? "未分類" : X.AssetType)</span>
+                    </td>
+
+                    <td>
+                        <span class="badge bg-light text-dark border">@X.Risk</span>
+                    </td>
+
+                    <td>
+                        @if (X.RiskLevel == "高" || X.RiskLevel == "High" || X.RiskLevel == "關鍵")
+                        {
+                            <span class="badge bg-danger">⚠️ @X.RiskLevel</span>
+                        }
+                        else if (X.RiskLevel == "中" || X.RiskLevel == "Medium")
+                        {
+                            <span class="badge bg-warning text-dark">⏳ @X.RiskLevel</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">✅ @X.RiskLevel</span>
+                        }
+                    </td>
+
+                    <td>
+                        @if (X.Status == "未處理" || X.Status == "Open")
+                        {
+                            <span class="text-danger fw-bold">● @X.Status</span>
+                        }
+                        else if (X.Status == "處理中" || X.Status == "In Progress")
+                        {
+                            <span class="text-warning fw-bold">● @X.Status</span>
+                        }
+                        else
+                        {
+                            <span class="text-success fw-bold">● @X.Status</span>
+                        }
+                    </td>
+
+                    <td>
+                        <button type="button" class="btn btn-success btn-sm me-2 shadow-sm" onclick="recoverItem(@X.Id)">
+                            ↩️ 項目復原
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm shadow-sm" onclick="realDelete(@X.Id)">
+                              永久銷毀 (Purge)
+                        </button>
                     </td>
                 </tr>
             }
@@ -40,7 +85,7 @@ else
 <script>
     // 復原邏輯
     function recoverItem(id) {
-    if (confirm("確定要復原這筆資產資料嗎？")) {
+    if (confirm("確定要復原這筆項目資料嗎？")) {
     $.ajax({
     url: '/Home/RecoverItemAjax',
     type: 'POST',
@@ -56,7 +101,7 @@ else
 
     // 永久刪除邏輯
     function realDelete(id) {
-    if (confirm("⚠️ 警告：確定要永久刪除此品項嗎？此操作將無法復原！")) {
+    if (confirm("⚠️ 警告：確定要永久刪除此項目嗎？此操作將無法復原！")) {
     $.ajax({
     url: '/Home/RealDeleteAjax',
     type: 'POST',

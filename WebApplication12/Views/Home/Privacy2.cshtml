@@ -1,19 +1,19 @@
-﻿@{
-    ViewData["Title"] = "新增產品";
-}
-
-<h1>新增產品資料</h1>
-<br />
-
-<form action="/Home/AddItem" method="post">
-    <div class="form-group">
-        <label>Id：</label>
-        <input type="text" name="AddId" class="form-control" required />
+﻿<form asp-action="AddItem" method="post">
+    <div class="mb-3">
+        <label class="form-label fw-bold">1. 請輸入評估項目/對象名稱：</label>
+        <input type="text" name="AddProduct" class="form-control" placeholder="例如：防火牆主機、***檔案" required />
     </div>
-    <div class="form-group">
-        <label>產品：</label>
-        <input type="text" name="AddProduct" class="form-control" required />
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">2. 請選擇項目類型：</label>
+        <select name="AddAssetType" class="form-select">
+            <option value="硬體設備">硬體設備</option>
+            <option value="雲端服務">雲端服務</option>
+            <option value="行動裝置">行動裝置</option>
+            <option value="軟體組件">軟體組件</option>
+            <option value="未分類" selected>未分類</option>
+        </select>
     </div>
-    <br />
-    <input type="submit" value="新增" class="btn btn-primary" />
+
+    <button type="submit" class="btn btn-primary">確認</button>
 </form>

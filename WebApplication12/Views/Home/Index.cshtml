@@ -1,49 +1,101 @@
 ﻿@model IEnumerable<WebApplication12.Models.Product>
 
 @{
-    ViewData["Title"] = "基層作業管理工作台";
+    ViewData["Title"] = "資產風險矩陣工作台";
 }
 
 <div class="container mt-4">
-    <h2>🛠️ 基層作業管理工作台 (產品清單 + 風險評估)</h2>
+    <h2>📋資安風險評估作業平台</h2>
+    <p class="text-muted">在下方對項目進行風險評估，操作清單點擊「調整風險」，即可一鍵呼叫調整面板。</p>
+
     <p class="text-success">@TempData["Result"]</p>
 
     <div class="mb-3 w-50">
         <div class="input-group">
-            <span class="input-group-text">🔍 快速搜尋</span>
-            <input type="text" id="searchInput" class="form-control" placeholder="輸入產品名稱或風險搜尋..." />
+            <span class="input-group-text">🔍 搜尋</span>
+            <input type="text" id="searchInput" class="form-control" placeholder="輸入風險評估項目、項目類型、風險或狀態搜尋..." />
         </div>
     </div>
 
-    <table class="table table-hover mt-3">
+    <table class="table table-hover mt-3 align-middle">
         <thead class="table-dark">
             <tr>
-                <th>編號</th>
-                <th>產品名稱</th>
-                <th>目前資安風險狀態</th>
-                <th>管理操作</th>
+                <th style="width: 8%">編號</th>
+
+                <th style="width: 15%">風險評估項目</th>
+
+                <th style="width: 12%">項目類型</th>
+
+                <th style="width: 25%">已識別的資安風險</th>
+
+                <th style="width: 12%">風險等級</th>
+
+                <th style="width: 12%">處置狀態</th>
+
+                <th style="width: 16%">操作</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var X in Model)
-            {
-                <tr id="row-@X.Id">
-                    <td>@X.Id</td>
-                    <td class="product-name">@X.Item</td>
-                    <td><span class="badge bg-info text-dark" id="badge-@X.Id">@X.Risk</span></td>
-                    <td>
-                        <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="openRiskPanel(@X.Id, '@X.Item')">⚙️ 調整風險</button>
-                        <button type="button" class="btn btn-warning btn-sm" onclick="moveToTrash(@X.Id)">🗑️ 刪除</button>
-                    </td>
-                </tr>
-            }
+            <tbody>
+                @foreach (var X in Model)
+                {
+                    <tr id="row-@X.Id">
+                        <td>@X.Id</td>
+                        <td class="product-name fw-bold">@X.Item</td>
+
+                        <td>
+                            <span class="badge bg-secondary">@X.AssetType</span>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-info text-dark" id="badge-@X.Id">@X.Risk</span>
+                        </td>
+
+                        <td>
+                            @if (X.RiskLevel == "高" || X.RiskLevel == "High" || X.RiskLevel == "關鍵")
+                            {
+                                <span class="badge bg-danger">⚠️ @X.RiskLevel</span>
+                            }
+                            else if (X.RiskLevel == "中" || X.RiskLevel == "Medium")
+                            {
+                                <span class="badge bg-warning text-dark">⏳ @X.RiskLevel</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-success">✅ @X.RiskLevel</span>
+                            }
+                        </td>
+
+                        <td>
+                            @if (X.Status == "未處理" || X.Status == "Open")
+                            {
+                                <span class="text-danger fw-bold">● @X.Status</span>
+                            }
+                            else if (X.Status == "處理中" || X.Status == "In Progress")
+                            {
+                                <span class="text-warning fw-bold">● @X.Status</span>
+                            }
+                            else
+                            {
+                                <span class="text-success fw-bold">● @X.Status</span>
+                            }
+                        </td>
+
+                        <td>
+                            <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="openRiskPanel(@X.Id, '@X.Item', '@X.RiskLevel', '@X.Status')">⚙️ 調整風險</button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="moveToTrash(@X.Id)">🗑️ 刪除</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
         </tbody>
     </table>
 
+    <!-- 下方動態配置面板保持原樣，確保你的 Ajax 機制不受任何影響 -->
     <div class="card p-4 shadow mt-4 border-primary" id="workPanel" style="display:none;">
         <h5 class="text-primary">正在即時評估：<span id="lblCurrentProduct" class="fw-bold"></span> (ID: <span id="lblId"></span>)</h5>
         <hr />
-        <label class="form-label fw-bold">請勾選此資產面臨的資安風險 (可多選)：</label>
+        <label class="form-label fw-bold">請勾選此項目已識別的資安風險：</label>
         <div class="my-3 p-3 border rounded bg-light">
             @foreach (var item in ViewBag.RiskDictionary)
             {
@@ -58,9 +110,41 @@
                 }
             }
         </div>
-        <div>
-            <button class="btn btn-success px-4" id="btnSubmit">儲存並即時更新</button>
-            <button class="btn btn-light border ms-2" onclick="$('#workPanel').fadeOut();">取消</button>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-warning">
+                    ⚡ 變更風險等級
+                </label>
+
+                <select id="selRiskLevel" class="form-select">
+                    <option value="低">✅ 低</option>
+                    <option value="中">⏳ 中</option>
+                    <option value="高">⚠️ 高</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold text-success">
+                    ⚙️ 變更狀態
+                </label>
+
+                <select id="selStatus" class="form-select">
+                    <option value="未處理">🔴 未處理</option>
+                    <option value="處理中">🟡 處理中</option>
+                    <option value="已緩解">🟢 已緩解</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button class="btn btn-success px-4" id="btnSubmit">
+                儲存並更新
+            </button>
+
+            <button class="btn btn-light border ms-2"
+                    onclick="$('#workPanel').fadeOut();">
+                取消
+            </button>
         </div>
     </div>
 </div>
@@ -68,75 +152,197 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function () {
-    // 即時搜尋過濾
+
+    // ==========================
+    // 即時搜尋
+    // ==========================
     $("#searchInput").on("keyup", function () {
-    var value = $(this).val().toLowerCase();
-    $("table tbody tr").filter(function () {
-    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
-    });
+
+        var value = $(this).val().toLowerCase();
+
+        $("table tbody tr").filter(function () {
+
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+
+        });
+
     });
 
-    // 提交更新風險
+    // ==========================
+    // 儲存風險設定
+    // ==========================
     $("#btnSubmit").click(function () {
-    var id = $("#lblId").text();
-    var selectedRisks = [];
 
-    $(".risk-checkbox:checked").each(function () {
-    selectedRisks.push($(this).val());
+        var id = $("#lblId").text();
+
+        var selectedRisks = [];
+
+        $(".risk-checkbox:checked").each(function () {
+
+            selectedRisks.push($(this).val());
+
+        });
+
+        var riskString = selectedRisks.length > 0
+            ? selectedRisks.join(";")
+            : "X0";
+
+        // 新增
+        var riskLevel = $("#selRiskLevel").val();
+
+        var status = $("#selStatus").val();
+
+        $.ajax({
+
+            url: "/Home/UpdateRiskAjax",
+
+            type: "POST",
+
+            data: {
+
+                id: id,
+
+                risk: riskString,
+
+                riskLevel: riskLevel,
+
+                status: status
+
+            },
+
+            success: function (response) {
+
+                alert(response);
+
+                location.reload();
+
+            },
+
+            error: function () {
+
+                alert("更新失敗！");
+
+            }
+
+        });
+
     });
 
-    var riskString = selectedRisks.length > 0 ? selectedRisks.join(';') : "X0";
+});
 
-    $.ajax({
-    url: '/Home/UpdateRiskAjax',
-    type: 'POST',
-    data: { id: id, risk: riskString },
-    success: function (response) {
-    alert(response);
-    // 終極高光時刻：不重新整理網頁，直接即時去撈取新的中文翻譯並更新列表上的 Badge！
-    location.reload(); // 重新載入刷新狀態
-    }
-    });
-    });
-    });
 
-    // 點擊「調整風險」按鈕觸發
-    function openRiskPanel(id, itemName) {
+// ======================================
+// 開啟風險調整面板
+// ======================================
+function openRiskPanel(id, itemName, currentLevel, currentStatus) {
+
     $("#lblId").text(id);
+
     $("#lblCurrentProduct").text(itemName);
-    $(".risk-checkbox").prop('checked', false);
 
-    // 用 Ajax 去後台撈出這筆產品目前的原始 X1;X2 代碼，並自動幫 Checkbox 打勾
-    $.ajax({
-    url: '/Home/GetRiskAjax',
-    type: 'GET',
-    data: { id: id },
-    success: function (dbRisk) {
-    if (dbRisk && dbRisk !== "X0") {
-    var risks = dbRisk.split(';');
-    risks.forEach(function (riskCode) {
-    $("#chk-" + riskCode.trim()).prop('checked', true);
-    });
-    }
-    $("#workPanel").fadeIn();
-    $('html, body').animate({ scrollTop: $("#workPanel").offset().top }, 500); // 畫面平滑滾動到作業區
-    }
-    });
+    $(".risk-checkbox").prop("checked", false);
+
+    // 初始化下拉選單
+    if (currentLevel) {
+
+        $("#selRiskLevel").val(currentLevel);
+
     }
 
-    // 軟刪除
-    function moveToTrash(id) {
-    if (confirm("確定要將此品項移至資源回收桶嗎？")) {
+    if (currentStatus) {
+
+        $("#selStatus").val(currentStatus);
+
+    }
+
     $.ajax({
-    url: '/Home/SoftDeleteAjax',
-    type: 'POST',
-    data: { id: id },
-    success: function (response) {
-    alert(response);
-    $("#row-" + id).fadeOut(500);
-    $("#workPanel").hide();
-    }
+
+        url: "/Home/GetRiskAjax",
+
+        type: "GET",
+
+        data: {
+
+            id: id
+
+        },
+
+        success: function (dbRisk) {
+
+            if (dbRisk && dbRisk !== "X0") {
+
+                var risks = dbRisk.split(";");
+
+                risks.forEach(function (riskCode) {
+
+                    $("#chk-" + riskCode.trim()).prop("checked", true);
+
+                });
+
+            }
+
+            $("#workPanel").fadeIn();
+
+            $("html, body").animate({
+
+                scrollTop: $("#workPanel").offset().top
+
+            }, 500);
+
+        },
+
+        error: function () {
+
+            alert("讀取資料失敗！");
+
+        }
+
     });
+
+}
+
+
+// ======================================
+// 軟刪除
+// ======================================
+function moveToTrash(id) {
+
+    if (!confirm("確定要將此品項移至資源回收桶嗎？")) {
+
+        return;
+
     }
-    }
+
+    $.ajax({
+
+        url: "/Home/SoftDeleteAjax",
+
+        type: "POST",
+
+        data: {
+
+            id: id
+
+        },
+
+        success: function (response) {
+
+            alert(response);
+
+            $("#row-" + id).fadeOut(500);
+
+            $("#workPanel").hide();
+
+        },
+
+        error: function () {
+
+            alert("刪除失敗！");
+
+        }
+
+    });
+
+}
+        
 </script>
