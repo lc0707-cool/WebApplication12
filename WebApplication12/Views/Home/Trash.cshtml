@@ -1,0 +1,72 @@
+﻿@model IEnumerable<WebApplication12.Models.Product>
+
+<h1>♻️ 資訊資產 - 資源回收桶</h1>
+<hr />
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">目前回收桶空空如也。</div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>編號</th>
+                <th>產品名稱</th>
+                <th>原始風險代碼</th>
+                <th>回收桶操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var X in Model)
+            {
+                <tr id="trash-row-@X.Id">
+                    <td>@X.Id</td>
+                    <td>@X.Item</td>
+                    <td>@X.Risk</td>
+                    <td>
+                        <button type="button" class="btn btn-success btn-sm" onclick="recoverItem(@X.Id)">復原</button>
+
+                        <button type="button" class="btn btn-danger btn-sm" onclick="realDelete(@X.Id)">永久刪除</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    // 復原邏輯
+    function recoverItem(id) {
+    if (confirm("確定要復原這筆資產資料嗎？")) {
+    $.ajax({
+    url: '/Home/RecoverItemAjax',
+    type: 'POST',
+    data: { id: id },
+    success: function (response) {
+    alert(response);
+    $("#trash-row-" + id).fadeOut(300); // 從回收桶畫面上移除
+    },
+    error: function () { alert("復原失敗！"); }
+    });
+    }
+    }
+
+    // 永久刪除邏輯
+    function realDelete(id) {
+    if (confirm("⚠️ 警告：確定要永久刪除此品項嗎？此操作將無法復原！")) {
+    $.ajax({
+    url: '/Home/RealDeleteAjax',
+    type: 'POST',
+    data: { id: id },
+    success: function (response) {
+    alert(response);
+    $("#trash-row-" + id).fadeOut(300); // 從回收桶畫面上移除
+    },
+    error: function () { alert("永久刪除失敗！"); }
+    });
+    }
+    }
+</script>

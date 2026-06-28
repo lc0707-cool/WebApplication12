@@ -1,0 +1,104 @@
+﻿@{
+    ViewData["Title"] = "基層作業專用 - 即時盤點面板";
+}
+
+<div class="container mt-4">
+    <h1>🛠️ 資安盤點即時作業面板</h1>
+    <p class="text-muted">本介面專供低階管理者（作業層）進行高精確度日常資產風險維護。</p>
+    <hr />
+
+    <div class="card p-3 mb-4 bg-light">
+        <h6 class="card-title">快速定位資產</h6>
+        <div class="input-group">
+            <span class="input-group-text">資產 ID</span>
+            <input type="number" id="txtId" class="form-control" placeholder="請輸入產品 ID，例如：1" />
+            <button class="btn btn-primary" id="btnSearch">載入資產資料</button>
+        </div>
+    </div>
+
+    <div class="card p-4 shadow-sm" id="workPanel" style="display:none;">
+        <h5>當前作業對象：產品 ID <span id="lblId" class="text-danger font-weight-bold"></span></h5>
+        <hr />
+
+        <label class="form-label font-weight-bold">請勾選該資產具備的資安風險項目 (可多選)：</label>
+        <div class="my-3 p-3 border rounded bg-light">
+            @foreach (var item in ViewBag.RiskDictionary)
+            {
+                // 排除 X0，因為 X0 是沒評估時的預設值
+                if (item.Key != "X0")
+                {
+                    <div class="form-check form-check-inline me-4 mb-2">
+                        <input class="form-check-input risk-checkbox" type="checkbox" value="@item.Key" id="chk-@item.Key">
+                        <label class="form-check-label" for="chk-@item.Key">
+                            <span class="badge bg-secondary">@item.Key</span> @item.Value
+                        </label>
+                    </div>
+                }
+            }
+        </div>
+
+        <button class="btn btn-success w-25" id="btnSubmit">確認提交更新</button>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function () {
+
+    // 1. 點擊查詢：自動勾選對應的方塊
+    $("#btnSearch").click(function () {
+    var id = $("#txtId").val();
+    if (!id) { alert("請輸入產品 ID"); return; }
+
+    $.ajax({
+    url: '/Home/GetRiskAjax',
+    type: 'GET',
+    data: { id: id },
+    success: function (dbRisk) {
+    $("#lblId").text(id);
+    $(".risk-checkbox").prop('checked', false); // 先清空舊的勾選
+
+    // 修正處：JavaScript 的字串切割方法是小寫的 split
+    if (dbRisk && dbRisk !== "X0") {
+    var risks = dbRisk.split(';');
+    risks.forEach(function (riskCode) {
+    $("#chk-" + riskCode.trim()).prop('checked', true);
+    });
+    }
+
+    $("#workPanel").fadeIn();
+    },
+    error: function () {
+    alert("找不到該資產編號，請重新確認！");
+    $("#workPanel").hide();
+    }
+    });
+    });
+
+    // 2. 點擊提交：自動將打勾的項目的 Value 組合成 "X1;X3" 傳給後端
+    $("#btnSubmit").click(function () {
+    var id = $("#lblId").text();
+    var selectedRisks = [];
+
+    // 收集所有被打勾的 checkbox value
+    $(".risk-checkbox:checked").each(function () {
+    selectedRisks.push($(this).val());
+    });
+
+    // 如果什麼都沒勾，預設為 X0 (尚未評估)
+    var riskString = selectedRisks.length > 0 ? selectedRisks.join(';') : "X0";
+
+    $.ajax({
+    url: '/Home/UpdateRiskAjax',
+    type: 'POST',
+    data: { id: id, risk: riskString },
+    success: function (msg) {
+    alert(msg);
+    },
+    error: function () {
+    alert("同步至資料庫時發生非預期錯誤。");
+    }
+    });
+    });
+    });
+</script>

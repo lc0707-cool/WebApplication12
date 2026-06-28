@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "新增產品";
+}
+
+<h1>新增產品資料</h1>
+<br />
+
+<form action="/Home/AddItem" method="post">
+    <div class="form-group">
+        <label>Id：</label>
+        <input type="text" name="AddId" class="form-control" required />
+    </div>
+    <div class="form-group">
+        <label>產品：</label>
+        <input type="text" name="AddProduct" class="form-control" required />
+    </div>
+    <br />
+    <input type="submit" value="新增" class="btn btn-primary" />
+</form>
