@@ -8,7 +8,7 @@ namespace WebApplication12.Controllers
     public class HomeController : Controller
     {
         // 資料庫連線字串
-        string CS = @"Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=C:\Users\美芳\OneDrive\文件\store.mdf;Integrated Security=True;Connect Timeout=30;Encrypt=True";
+        string CS = @"";
 
         // 全域宣告資安風險對照字典
         Dictionary<string, string> MyRisk = new Dictionary<string, string>();
